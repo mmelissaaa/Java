@@ -1,0 +1,238 @@
+import java.awt.*;
+        import java.awt.event.*;
+        import java.util.Arrays;
+        import java.util.Comparator;
+
+
+
+public class Guiawttable extends Frame {
+    private Label label;
+    private TextField jobCountField;
+    private Button submitButton, clearButton;
+    private List list;
+    private TextArea resultTextArea;
+    private static Dialog inputDialog;
+
+    public Dialog getInputDialog() {
+        return inputDialog;
+    }
+
+    public void setInputDialog(Dialog inputDialog) {
+        this.inputDialog = inputDialog;
+    }
+
+    public Guiawttable() {
+        setTitle("Machine Scheduling");
+        setSize(800, 600);
+        setLayout(new BorderLayout());
+
+        Panel inputPanel = new Panel();
+        inputPanel.setLayout(new FlowLayout());
+        inputPanel.setBackground(new Color(173, 216, 230));
+
+        Font labelFont = new Font("Times New Roman", Font.BOLD, 16);
+
+        label = new Label("Enter the number of jobs:");
+        label.setForeground(Color.BLUE);
+        label.setFont(labelFont);
+        jobCountField = new TextField(10);
+        jobCountField.setFont(new Font("SansSerif", Font.PLAIN, 16));
+        submitButton = new Button("Submit");
+        submitButton.setFont(new Font("SansSerif", Font.PLAIN, 16));
+        clearButton = new Button("Clear");
+        clearButton.setBackground(Color.RED);
+        clearButton.setFont(new Font("SansSerif", Font.PLAIN, 16));
+
+        inputPanel.add(label);
+        inputPanel.add(jobCountField);
+        inputPanel.add(submitButton);
+        inputPanel.add(clearButton);
+
+        add(inputPanel, BorderLayout.NORTH);
+
+        list = new List();
+        list.setFont(new Font("SansSerif", Font.PLAIN, 16));
+        list.setPreferredSize(new Dimension(800, 400));
+
+        add(list, BorderLayout.CENTER);
+
+        Panel resultPanel = new Panel();
+        resultPanel.setLayout(new BorderLayout());
+        resultPanel.setBackground(new Color(173, 216, 230));
+
+        Font resultFont = new Font("SansSerif", Font.BOLD, 16);
+
+        resultTextArea = new TextArea(10, 50);
+        resultTextArea.setEditable(false);
+        resultTextArea.setFont(resultFont);
+        resultPanel.add(resultTextArea, BorderLayout.CENTER);
+
+        add(resultPanel, BorderLayout.SOUTH);
+
+        submitButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    int n = Integer.parseInt(jobCountField.getText());
+                    float[] m1 = new float [n];
+                    float[] m2 = new float [n];
+                    int [] seq = new int [n];
+                    int[] id = new int [n];
+
+
+                    list.removeAll();
+
+                    for (int i = 0; i < n; i++) {
+                        m1[i] = getInputFloat("Processing time for machine A for Job " + (i + 1) + ":");
+                        m2[i] = getInputFloat("Processing time for machine B for Job " + (i + 1) + ":");
+                        id[i] = i+1 ;
+
+                        list.add("Job " + (i + 1) + ": A(" + m1[i] + ") B(" + m2[i] + ")");
+                    }
+
+                    for (int j = 0; j < n-1; j++) {
+                        for (int i = 0; i < n-1-j; i++) {
+                            if (Math.min(m1[i], m2[i]) > Math.min(m1[i + 1], m2[i + 1])) {
+                                float temp = m1[i];
+                                m1[i] = m1[i + 1];
+                                m1[i + 1] = temp;
+
+                                temp = m2[i];
+                                m2[i] = m2[i + 1];
+                                m2[i + 1] = temp;
+
+                                int tempId = id[i];
+                                id[i] = id[i + 1];
+                                id[i + 1] = tempId;
+                            }
+                        }
+                    }
+
+
+                    float[] seqm1 = new float[n];
+                    float[] seqm2 = new float[n];
+                    int l ,r;
+                    l = 0 ;
+                    r = n-1;
+                    for (int i = 0; i < n; i++) {
+                        if(m1[i] < m2[i]){
+                            seq[l] = id[i];
+                            seqm1[l] = m1[i];
+                            seqm2[l] = m2[i];
+
+                            l++;
+                        }
+                        else {
+                            seq[r] = id[i];
+                            seqm1[r] = m1[i];
+                            seqm2[r] = m2[i];
+
+                            r--;
+                        }
+                    }
+                    System.out.print("OPTIMAL SEQUENCE :");
+                    for (int i = 0; i < n; i++) {
+                        System.out.print(" "+seq[i]);
+                    }
+
+                    float idlem1=0.0f;
+                    float idlem2=0.0f;
+                    float TTm1=0.0f;
+                    float TTm2=0.0f;
+
+                    for (int i = 0; i < n; i++) {
+
+
+                        TTm1 += seqm1[i];
+                        if(TTm1 > TTm2 ){
+                            idlem2 += TTm1 - TTm2 ;
+                        }
+
+                        TTm2 = Math.max(TTm1 , TTm2 ) + seqm2[i];
+                    }
+                    idlem1 = TTm2 - TTm1 ;
+
+
+
+                    resultTextArea.setText("Optimal sequence of jobs: " + Arrays.toString(seq) +
+                            "\nTotal elapsed time: " + TTm2 + " hours" +
+                            "\nIdle time for Machine A: " + idlem1 + " hours" +
+                            "\nIdle time for Machine B: " + idlem2 + " hours");
+                } catch (NumberFormatException ex) {
+                    showMessageDialog("Please enter valid numeric values.", "Error");
+                }
+            }
+        });
+
+        clearButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                jobCountField.setText("");
+                list.removeAll();
+                resultTextArea.setText("");
+            }
+        });
+
+        addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent we) {
+                System.exit(0);
+            }
+        });
+
+        setVisible(true);
+    }
+
+    static float getInputFloat(String message) {
+        Frame parent = new Frame();
+        inputDialog = new Dialog(parent, "Input", true);
+        Label label = new Label(message);
+        TextField textField = new TextField(10);
+        Button okButton = new Button("OK");
+
+        okButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                inputDialog.dispose();
+            }
+        });
+
+        inputDialog.setLayout(new FlowLayout());
+        inputDialog.add(label);
+        inputDialog.add(textField);
+        inputDialog.add(okButton);
+        inputDialog.pack();
+        inputDialog.setLocationRelativeTo(null);
+        inputDialog.setVisible(true);
+
+        try {
+            return Float.parseFloat(textField.getText());
+        } catch (NumberFormatException e) {
+            return 0.0f;
+        }
+    }
+
+    static void showMessageDialog(String message, String title) {
+        Frame parent = new Frame();
+        Dialog messageDialog = new Dialog(parent, title, true);
+        Label label = new Label(message);
+        Button okButton = new Button("OK");
+
+        okButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                messageDialog.dispose();
+            }
+        });
+
+        messageDialog.setLayout(new FlowLayout());
+        messageDialog.add(label);
+        messageDialog.add(okButton);
+        messageDialog.pack();
+        messageDialog.setLocationRelativeTo(null);
+        messageDialog.setVisible(true);
+    }
+
+    public static void main(String[] args) {
+        new Guiawttable();
+    }
+}
